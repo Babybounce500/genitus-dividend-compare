@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GENITUS COMPARE</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root{--bg:#f4f7fb;--surface:#ffffff;--panel:#ffffff;--border:#d9e2ec;--accent:#0e7490;--gold:#b45309;--green:#15803d;--red:#b91c1c;--muted:#52606d;--text:#1e293b;--bright:#0f172a;--mono:'Space Mono',monospace;--sans:'Rajdhani',sans-serif;}
+    :root.dark-theme{--bg:#080c10;--surface:#0d1117;--panel:#111820;--border:#1e2d3d;--accent:#00d4ff;--gold:#f0c040;--green:#00ff88;--red:#ff3b5c;--muted:#7d92a8;--text:#c8d8e8;--bright:#ffffff;}
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;min-height:100vh;transition:background .25s,color .25s;}
+    header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:200;}
+    .logo{display:flex;align-items:center;gap:12px;}
+    .logo-mark{width:32px;height:32px;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:14px;color:var(--gold);}
+    .logo-text{font-family:var(--mono);font-size:13px;letter-spacing:3px;color:var(--bright);}
+    .logo-sub{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted);display:block;margin-top:1px;}
+    #themeToggleBtn{background:none;border:1px solid var(--border);color:var(--accent);width:30px;height:30px;border-radius:2px;cursor:pointer;font-size:14px;}
+    .content{max-width:1100px;margin:0 auto;padding:18px;}
+    .picker-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+    @media(max-width:760px){.picker-cols{grid-template-columns:1fr;}}
+    .picker-col{background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:14px;}
+    .picker-col.slot-a{border-top:3px solid var(--accent);}
+    .picker-col.slot-b{border-top:3px solid var(--gold);}
+    .field-label{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block;}
+    select,input[type="text"]{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:8px 10px;outline:none;border-radius:2px;margin-bottom:8px;}
+    .picker-list{max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:2px;}
+    .picker-item{padding:6px 8px;border-bottom:1px solid var(--border);cursor:pointer;font-size:11px;}
+    .picker-item:hover{background:rgba(180,83,9,0.08);}
+    .picker-item .sym{font-family:var(--mono);color:var(--accent);font-weight:700;}
+    .picked{font-family:var(--mono);font-size:13px;padding:8px;background:var(--panel);border-radius:2px;text-align:center;color:var(--bright);font-weight:700;}
+    .btn{font-family:var(--mono);font-size:11px;letter-spacing:1px;padding:9px 14px;border:1px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer;border-radius:2px;text-transform:uppercase;}
+    .btn:hover{background:var(--gold);color:var(--bg);}
+    .empty{padding:20px;text-align:center;color:var(--muted);font-family:var(--mono);font-size:11px;}
+    .compare-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);}
+    .compare-table th,.compare-table td{padding:10px 12px;border-bottom:1px solid rgba(125,146,168,0.15);text-align:center;font-size:13px;}
+    .compare-table th{font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;background:var(--panel);}
+    .compare-table td:first-child,.compare-table th:first-child{text-align:left;font-family:var(--mono);color:var(--muted);font-size:10px;}
+    .winner{color:var(--green);font-weight:700;}
+    .panel-block{background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:14px;margin-top:16px;}
+    .panel-block h3{font-family:var(--mono);font-size:11px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:10px;}
+    .chart-wrap{height:280px;position:relative;}
+    .warn{background:rgba(240,192,64,0.1);border:1px solid var(--gold);border-radius:3px;padding:10px 12px;font-size:11px;color:var(--text);margin-top:16px;line-height:1.6;}
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo"><div class="logo-mark">⚖</div><div><span class="logo-text">GENITUS</span><span class="logo-sub">COMPARE</span></div></div>
+  <button id="themeToggleBtn" title="Toggle theme">🌙</button>
+</header>
+<div class="content">
+  <div class="picker-cols">
+    <div class="picker-col slot-a">
+      <div class="field-label" style="color:var(--accent)">Position A</div>
+      <div id="pickedA" class="picked" style="display:none"></div>
+      <select id="exA" onchange="onExChange('A')"></select>
+      <input type="text" id="searchA" oninput="renderPicker('A')" placeholder="Search...">
+      <div class="picker-list" id="listA"></div>
+    </div>
+    <div class="picker-col slot-b">
+      <div class="field-label" style="color:var(--gold)">Position B</div>
+      <div id="pickedB" class="picked" style="display:none"></div>
+      <select id="exB" onchange="onExChange('B')"></select>
+      <input type="text" id="searchB" oninput="renderPicker('B')" placeholder="Search...">
+      <div class="picker-list" id="listB"></div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-bottom:16px"><button class="btn" onclick="runCompare()">VERGLEICHEN</button></div>
+  <div id="compareResult"></div>
+</div>
+<script>
+  const SUMMARY_URL = 'https://raw.githubusercontent.com/Babybounce500/genitus-ticker-cache/main/dividend-summary.csv';
+  const HISTORY_URL = 'https://raw.githubusercontent.com/Babybounce500/genitus-ticker-cache/main/dividend-history.csv';
+  (function(){
+    const KEY='genitusTheme:compare';
+    function applyTheme(t){ document.documentElement.classList.toggle('dark-theme', t==='dark'); localStorage.setItem(KEY,t); const btn=document.getElementById('themeToggleBtn'); if(btn) btn.textContent = t==='dark' ? '☀' : '🌙'; }
+    window.__theme = localStorage.getItem(KEY) || 'light';
+    applyTheme(window.__theme);
+    document.addEventListener('DOMContentLoaded', function(){ const btn=document.getElementById('themeToggleBtn'); if(btn) btn.addEventListener('click', function(){ window.__theme = window.__theme==='dark' ? 'light' : 'dark'; applyTheme(window.__theme); }); });
+  })();
+  function parseCSVLine(line){
+    const out=[]; let cur=''; let inQ=false;
+    for(let i=0;i<line.length;i++){ const c=line[i];
+      if(inQ){ if(c==='"'){ if(line[i+1]==='"'){cur+='"';i++;} else inQ=false; } else cur+=c; }
+      else { if(c===','){ out.push(cur); cur=''; } else if(c==='"'){ inQ=true; } else cur+=c; } }
+    out.push(cur); return out;
+  }
+  let summaryByExchange = new Map(); let historyBySymbol = new Map(); let cacheReady = null;
+  function loadCache(){
+    if(cacheReady) return cacheReady;
+    cacheReady = Promise.all([ fetch(SUMMARY_URL).then(r=>r.text()), fetch(HISTORY_URL).then(r=>r.text()) ]).then(([sText,hText])=>{
+      const sLines = sText.split('\n').filter(Boolean);
+      for(let i=1;i<sLines.length;i++){
+        const [fullSymbol,name,type,ex,count,streakYears,streakDir,yieldPct,price] = parseCSVLine(sLines[i]);
+        if(!fullSymbol||!ex) continue;
+        if(!summaryByExchange.has(ex)) summaryByExchange.set(ex, []);
+        summaryByExchange.get(ex).push({ fullSymbol, name:(name||'').trim(), ex, count:parseInt(count)||0, streakYears:parseInt(streakYears)||1, streakDir:streakDir||'new', yieldPct:parseFloat(yieldPct)||0, price:price?parseFloat(price):null });
+      }
+      const hLines = hText.split('\n').filter(Boolean);
+      for(let i=1;i<hLines.length;i++){
+        const [fullSymbol,date,amount,currency,price] = parseCSVLine(hLines[i]);
+        if(!fullSymbol) continue;
+        if(!historyBySymbol.has(fullSymbol)) historyBySymbol.set(fullSymbol, []);
+        historyBySymbol.get(fullSymbol).push({ date, value:parseFloat(amount)||0, currency:currency||'', price: price?parseFloat(price):null });
+      }
+    }).catch(e=>console.warn('Cache load failed:', e.message));
+    return cacheReady;
+  }
+  const EXCHANGES = [
+    {g:'🇺🇸 United States',opts:['US','NYSE','NASDAQ','AMEX','PINK','OTCQB','OTCQX','BATS']},
+    {g:'🇨🇦 Canada',opts:['TO','V','NEO']}, {g:'🌎 Latin America',opts:['MX','SA','BA','SN','LIM']},
+    {g:'🇬🇧 United Kingdom',opts:['LSE','IL']},
+    {g:'🇩🇪 Germany',opts:['XETRA','F','STU','DU','BE','MU','HM','HA']},
+    {g:'🇱🇺 Luxembourg',opts:['LU']}, {g:'🇮🇪 Ireland',opts:['IR']},
+    {g:'🇫🇷 France',opts:['PA']}, {g:'🇳🇱 Netherlands',opts:['AS']}, {g:'🇧🇪 Belgium',opts:['BR']},
+    {g:'🇵🇹 Portugal',opts:['LS']}, {g:'🇨🇭 Switzerland',opts:['SW']}, {g:'🇪🇸 Spain',opts:['MC']},
+    {g:'🇦🇹 Austria',opts:['VI']}, {g:'🇬🇷 Greece',opts:['AT']},
+    {g:'🇸🇪 Scandinavia',opts:['ST','OL','CO','HE']},
+    {g:'🇵🇱 Eastern Europe',opts:['WAR','PR','BUD','RO','ZSE']},
+    {g:'🇷🇺 Russia',opts:['MCX']}, {g:'🇹🇷 Turkey',opts:['IS']}, {g:'🇮🇱 Israel',opts:['TA']},
+    {g:'🇿🇦 Africa',opts:['JSE','EGX','BC','XNAI','XZIM','XBOT','LUSE','GSE','USE','RSE','DSE','SEM','MSE','XNSA']},
+    {g:'🇭🇰 Hong Kong',opts:['HK']}, {g:'🇨🇳 China',opts:['SHG','SHE']},
+    {g:'🇰🇷 Korea',opts:['KO','KQ']}, {g:'🇮🇳 India',opts:['NSE']}, {g:'🇵🇰 Pakistan',opts:['KAR']},
+    {g:'🇱🇰 Sri Lanka',opts:['CM']}, {g:'🇸🇬 Southeast Asia',opts:['KLSE','BK','JK','VN','PSE']},
+    {g:'🇹🇼 Taiwan',opts:['TW','TWO']}, {g:'🇦🇺 Australia',opts:['AU']},
+  ];
+  function buildSel(id){
+    document.getElementById(id).innerHTML = '<option value="">— Select Market —</option>' +
+      EXCHANGES.map(g=>`<optgroup label="${g.g}">${g.opts.map(o=>`<option value="${o}">${o}</option>`).join('')}</optgroup>`).join('');
+  }
+  const state = { A:{list:[],picked:null}, B:{list:[],picked:null} };
+  async function onExChange(slot){
+    const ex = document.getElementById('ex'+slot).value;
+    document.getElementById('search'+slot).value='';
+    if(!ex){ state[slot].list=[]; renderPicker(slot); return; }
+    await loadCache();
+    state[slot].list = (summaryByExchange.get(ex)||[]).slice().sort((a,b)=>b.yieldPct-a.yieldPct);
+    renderPicker(slot);
+  }
+  function renderPicker(slot){
+    const q = document.getElementById('search'+slot).value.toLowerCase().trim();
+    const rows = state[slot].list.filter(r=>!q || r.fullSymbol.toLowerCase().includes(q) || r.name.toLowerCase().includes(q)).slice(0,150);
+    document.getElementById('list'+slot).innerHTML = rows.length ? rows.map(r=>`<div class="picker-item" onclick="pick('${slot}','${r.fullSymbol}')"><span class="sym">${r.fullSymbol}</span> ${r.name}</div>`).join('') : '<div class="empty">No matches.</div>';
+  }
+  function pick(slot, fullSymbol){
+    const row = state[slot].list.find(r=>r.fullSymbol===fullSymbol);
+    state[slot].picked = row;
+    const el = document.getElementById('picked'+slot);
+    el.style.display='block'; el.textContent = `${row.fullSymbol} — ${row.name}`;
+  }
+  function fmt(n){ const v=parseFloat(n); return isNaN(v)?'—':(v<0.01?v.toFixed(6):v.toFixed(2)); }
+  function mean(arr){ return arr.reduce((s,v)=>s+v,0)/arr.length; }
+  function stddev(arr,m){ return Math.sqrt(arr.reduce((s,v)=>s+(v-m)*(v-m),0)/arr.length)||0; }
+
+  function computeMetrics(row){
+    const hist = (historyBySymbol.get(row.fullSymbol)||[]).slice().sort((a,b)=>new Date(a.date)-new Date(b.date));
+    const priced = hist.filter(h=>h.price>0);
+    const byYear = {};
+    hist.forEach(h=>{ const y=new Date(h.date).getFullYear(); if(!y) return; byYear[y]=(byYear[y]||0)+h.value; });
+    const years = Object.keys(byYear).map(Number).sort((a,b)=>a-b);
+    let divCagr = 0;
+    if(years.length>=2){ const span=years.length-1; if(byYear[years[0]]>0 && span>0) divCagr = (Math.pow(byYear[years[years.length-1]]/byYear[years[0]], 1/span)-1)*100; }
+    const chowder = row.yieldPct + divCagr;
+
+    let annualizedVol = null, maxDD = null, totalReturnCAGR = null, priceIdx=[100], totalIdx=[100], labels=[];
+    if(priced.length>=3){
+      const returns=[], intervals=[];
+      for(let i=1;i<priced.length;i++){ returns.push(Math.log(priced[i].price/priced[i-1].price)); intervals.push((new Date(priced[i].date)-new Date(priced[i-1].date))/86400000); }
+      const avgInt = mean(intervals);
+      annualizedVol = stddev(returns, mean(returns)) * Math.sqrt(365/avgInt) * 100;
+      let peak=priced[0].price; maxDD=0;
+      priced.forEach(h=>{ if(h.price>peak) peak=h.price; const dd=(peak-h.price)/peak; if(dd>maxDD) maxDD=dd; });
+      const first=priced[0], last=priced[priced.length-1];
+      const yrs = (new Date(last.date)-new Date(first.date))/86400000/365;
+      let shares=1;
+      labels=[first.date];
+      for(let i=1;i<priced.length;i++){
+        priceIdx.push(priced[i].price/first.price*100);
+        shares += (shares*priced[i].value)/priced[i].price;
+        totalIdx.push(shares*priced[i].price/first.price*100);
+        labels.push(priced[i].date);
+      }
+      totalReturnCAGR = yrs>0 ? (Math.pow(shares*last.price/first.price,1/yrs)-1)*100 : 0;
+    }
+    return { divCagr, chowder, annualizedVol, maxDD, totalReturnCAGR, priceIdx, totalIdx, labels, yearsTracked:years.length };
+  }
+
+  let compareChart=null;
+  async function runCompare(){
+    const a = state.A.picked, b = state.B.picked;
+    if(!a || !b){ alert('Pick one symbol in Position A and one in Position B first.'); return; }
+    await loadCache();
+    const ma = computeMetrics(a), mb = computeMetrics(b);
+
+    function row(label, va, vb, fmtFn, higherIsBetter){
+      const fa = fmtFn(va), fb = fmtFn(vb);
+      let wa='', wb='';
+      if(higherIsBetter!=null && va!=null && vb!=null){
+        if(higherIsBetter ? va>vb : va<vb) wa='winner'; else if(higherIsBetter ? vb>va : vb<va) wb='winner';
+      }
+      return `<tr><td>${label}</td><td class="${wa}">${fa}</td><td class="${wb}">${fb}</td></tr>`;
+    }
+
+    document.getElementById('compareResult').innerHTML = `
+      <table class="compare-table">
+        <thead><tr><th>Metrik</th><th style="color:var(--accent)">${a.fullSymbol}</th><th style="color:var(--gold)">${b.fullSymbol}</th></tr></thead>
+        <tbody>
+          ${row('Trailing Yield', a.yieldPct, b.yieldPct, v=>v.toFixed(2)+'%', true)}
+          ${row('Dividend CAGR', ma.divCagr, mb.divCagr, v=>v.toFixed(1)+'%', true)}
+          ${row('Chowder Number', ma.chowder, mb.chowder, v=>v.toFixed(1), true)}
+          ${row('Streak', a.streakYears+'|'+a.streakDir, b.streakYears+'|'+b.streakDir, v=>{const[y,d]=v.split('|');return y+'y '+d;}, null)}
+          ${row('Verified Payments', a.count, b.count, v=>v, true)}
+          ${row('Ann. Volatility (proxy)', ma.annualizedVol, mb.annualizedVol, v=>v!=null?v.toFixed(1)+'%':'n/a', false)}
+          ${row('Max Drawdown', ma.maxDD, mb.maxDD, v=>v!=null?'-'+(v*100).toFixed(1)+'%':'n/a', true)}
+          ${row('Total Return CAGR', ma.totalReturnCAGR, mb.totalReturnCAGR, v=>v!=null?v.toFixed(1)+'%':'n/a', true)}
+        </tbody>
+      </table>
+      <div class="panel-block">
+        <h3>Indexed Total Return (beide starten bei 100)</h3>
+        <div class="chart-wrap"><canvas id="compareChart"></canvas></div>
+      </div>
+      <div class="warn"><b>Hinweis:</b> Volatilität/Drawdown/Total-Return basieren auf Kursen an Dividenden-Zahltagen, nicht auf Tageskursen — eine Näherung, kein Ersatz für einen echten Tages-Chart. Da beide Aktien an unterschiedlichen Tagen zahlen, ist die X-Achse im Chart eine "Zahlungs-Index"-Achse (1., 2., 3. Zahlung...), keine echte Kalender-Ausrichtung — für den groben Verlaufsvergleich ausreichend, nicht für punktgenaue Datums-Vergleiche. "Gewinner" (grün) markiert nur die jeweils bessere Zahl in dieser Tabelle, keine Kauf-/Verkaufsempfehlung.</div>
+    `;
+
+    const ctx = document.getElementById('compareChart').getContext('2d');
+    if(compareChart) compareChart.destroy();
+    const maxLen = Math.max(ma.labels.length, mb.labels.length);
+    compareChart = new Chart(ctx, {
+      type:'line',
+      data:{ labels: ma.labels.length>=mb.labels.length?ma.labels:mb.labels, datasets:[
+        { label:a.fullSymbol, data: ma.totalIdx, borderColor:'#00d4ff', backgroundColor:'transparent', borderWidth:2, pointRadius:2 },
+        { label:b.fullSymbol, data: mb.totalIdx, borderColor:'#f0c040', backgroundColor:'transparent', borderWidth:2, pointRadius:2 },
+      ]},
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ display:true, position:'bottom', labels:{ color:'#7d92a8', font:{family:'Space Mono',size:10} } } },
+        scales:{ x:{ ticks:{ color:'#7d92a8', font:{family:'Space Mono',size:8}, maxTicksLimit:8, maxRotation:0 }, grid:{ display:false } },
+                 y:{ ticks:{ color:'#7d92a8', font:{family:'Space Mono',size:9} }, grid:{ color:'rgba(125,146,168,0.15)' } } }
+      }
+    });
+  }
+  buildSel('exA'); buildSel('exB');
+</script>
+</body>
+</html>
