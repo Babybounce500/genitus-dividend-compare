@@ -99,10 +99,10 @@
       }
       const hLines = hText.split('\n').filter(Boolean);
       for(let i=1;i<hLines.length;i++){
-        const [fullSymbol,date,amount,currency,price] = parseCSVLine(hLines[i]);
+        const [fullSymbol,date,amount,currency,price,pct] = parseCSVLine(hLines[i]);
         if(!fullSymbol) continue;
         if(!historyBySymbol.has(fullSymbol)) historyBySymbol.set(fullSymbol, []);
-        historyBySymbol.get(fullSymbol).push({ date, value:parseFloat(amount)||0, currency:currency||'', price: price?parseFloat(price):null });
+        historyBySymbol.get(fullSymbol).push({ date, value:parseFloat(amount)||0, currency:currency||'', price: price?parseFloat(price):null, pctOfPrice: pct?parseFloat(pct):null });
       }
     }).catch(e=>console.warn('Cache load failed:', e.message));
     return cacheReady;
@@ -155,7 +155,12 @@
 
   function computeMetrics(row){
     const hist = (historyBySymbol.get(row.fullSymbol)||[]).slice().sort((a,b)=>new Date(a.date)-new Date(b.date));
-    const priced = hist.filter(h=>h.price>0);
+    // Validated via live testing (AIXXF.US): a single stale/corrupt price
+    // embedded in an otherwise normal series inflated MaxDrawdown from a
+    // real ~66% to a fabricated ~80%. Excluding implausible single points
+    // (>50% implied single-payment yield) before computing anything fixes
+    // this without needing to touch the rest of the series.
+    const priced = hist.filter(h=>h.price>0 && !(h.pctOfPrice>50));
     const currentYear = new Date().getFullYear();
     const byYear = {};
     hist.forEach(h=>{ const y=new Date(h.date).getFullYear(); if(!y || y>=currentYear) return; byYear[y]=(byYear[y]||0)+h.value; });
