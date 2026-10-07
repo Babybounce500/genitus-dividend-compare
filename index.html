@@ -156,9 +156,15 @@
   function computeMetrics(row){
     const hist = (historyBySymbol.get(row.fullSymbol)||[]).slice().sort((a,b)=>new Date(a.date)-new Date(b.date));
     const priced = hist.filter(h=>h.price>0);
+    const currentYear = new Date().getFullYear();
     const byYear = {};
-    hist.forEach(h=>{ const y=new Date(h.date).getFullYear(); if(!y) return; byYear[y]=(byYear[y]||0)+h.value; });
-    const years = Object.keys(byYear).map(Number).sort((a,b)=>a-b);
+    hist.forEach(h=>{ const y=new Date(h.date).getFullYear(); if(!y || y>=currentYear) return; byYear[y]=(byYear[y]||0)+h.value; });
+    const allYears = Object.keys(byYear).map(Number).sort((a,b)=>a-b);
+    // Most recent unbroken run only -- a suspended-then-resumed payer (e.g.
+    // AAPL) must not have its CAGR computed straight across that gap.
+    let runStart = allYears.length-1;
+    while(runStart>0 && allYears[runStart]-allYears[runStart-1]===1) runStart--;
+    const years = allYears.slice(runStart);
     let divCagr = 0;
     if(years.length>=2){ const span=years.length-1; if(byYear[years[0]]>0 && span>0) divCagr = (Math.pow(byYear[years[years.length-1]]/byYear[years[0]], 1/span)-1)*100; }
     const chowder = row.yieldPct + divCagr;
